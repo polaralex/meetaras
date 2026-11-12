@@ -1,0 +1,21 @@
+# Example timeline. Times are on the presenter video's clock.
+presenter  talk.mov
+audio      mic.wav          # optional; omit to use the iPhone audio
+slides     deck.pdf
+# screen     demo.mov       # optional screen recording, used by `screen` / `screen full`
+# screen_offset 0.0         # presenter time at which the screen recording starts
+# intro      ../assets/intro.mp4   # optional: your intro, played before the talk
+# outro      ../assets/outro.mp4   # optional: your outro, played after
+# audio_offset 0.0          # optional: pin alignment (see `meetaras align`)
+# audio_drift_ppm 0
+
+0:00   start
+0:12   presenter
+0:45   slide 1
+2:10   slide 2
+5:30   presenter
+6:15   slide 3
+15:00  slide 4 side       # slide and speaker side by side (nothing covered)
+20:00  slide 5 full       # slide only
+34:00  screen             # screen recording, speaker in the corner
+41:20  end

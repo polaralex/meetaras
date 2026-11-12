@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meetaras editor</title>
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1><a href="/" title="All talks"><img class="logo" src="/static/logo.png" alt="Meetaras"></a> <span id="name"></span></h1>
+    <span id="saveStatus" class="status">Loading…</span>
+    <div class="spacer"></div>
+    <span class="editorOnly">
+      <button id="helpBtn" title="How this works (?)">Help</button>
+      <button id="undoBtn" title="Undo (Ctrl+Z)">Undo</button>
+      <button id="redoBtn" title="Redo (Ctrl+Shift+Z)">Redo</button>
+      <button id="exportPreview" title="Fast 720p render to check the edit">Export preview</button>
+    </span>
+  </header>
+
+  <div id="makeBar">
+    <span class="stepsLabel" title="The steps of Make video, below which the editor opens">Make video:</span>
+    <div id="steps"></div>
+    <span id="makeMsg" class="hint"></span>
+    <div class="spacer"></div>
+    <a id="outputLink" class="hidden" href="media/output/final.mp4" target="_blank">Play the video</a>
+    <button id="openFolder" class="hidden" title="Show the output folder (the video, its captions and the YouTube text) in the file manager">Open folder</button>
+    <button id="youtubeBtn" title="Title, description, tags and chapters for YouTube">YouTube</button>
+    <button id="logBtn" title="What Make video is doing">Log</button>
+    <label class="check" title="Stop once the draft is ready, to review it before the export"><input type="checkbox" id="reviewToggle"> Stop after the draft</label>
+    <button id="makeBtn" class="primary" title="Convert, draft, captions and the final 1080p export; finished steps are skipped">Make video</button>
+  </div>
+  <pre id="makeLog" class="log hidden"></pre>
+
+  <div id="conflict" class="banner hidden">
+    timeline.txt was changed outside the editor. <button id="reloadBtn">Reload it</button> (your unsaved edits here will be dropped)
+  </div>
+  <div id="error" class="banner error hidden"></div>
+
+  <div id="notReady" class="hidden"><div>
+    <h2>The editor isn't ready yet</h2>
+    <p id="notReadyMsg"></p>
+  </div></div>
+
+  <div id="editorArea" class="hidden">
+  <main>
+    <section id="stageWrap">
+      <div id="stageBox"><div id="stage">
+        <img id="slideImg" alt="">
+        <video id="screenVid" muted playsinline preload="auto"></video>
+        <video id="presVid" playsinline preload="auto"></video>
+        <div id="screenGap" class="gap hidden">outside the screen recording</div>
+        <div id="cutShade" class="gap cutShade hidden">Left out of the video</div>
+        <img id="ovl_badge" class="ovl" alt="">
+        <img id="ovl_strip_corner" class="ovl" alt="">
+        <img id="ovl_strip_side" class="ovl" alt="">
+        <img id="ovl_panel" class="ovl" alt="">
+        <img id="ovl_lower_third" class="ovl" alt="">
+        <video id="bumperVid" class="hidden" playsinline preload="auto"></video>
+      </div></div>
+      <div id="transport">
+        <button id="playBtn" title="Play / pause (Space)">▶</button>
+        <span id="clock">0:00.0 / 0:00</span>
+        <span id="modeNow" class="pill"></span>
+        <button id="introBtn" class="hidden" title="Play the intro">▶ Intro</button>
+        <button id="playAllBtn" class="hidden" title="Play as exported: intro, talk, outro (Home)">▶ All</button>
+        <button id="outroBtn" class="hidden" title="Play the outro">▶ Outro</button>
+        <div class="spacer"></div>
+        <label>Speed
+          <select id="speed"><option>1</option><option>1.5</option><option>2</option><option>3</option></select>
+        </label>
+        <label>Zoom <input id="zoom" type="range" min="0" max="100" value="0"></label>
+      </div>
+    </section>
+
+    <aside id="side">
+      <div id="editing" class="hidden"></div>
+      <details id="infoBox">
+        <summary><h2>Video info</h2></summary>
+        <p class="hint">Shown as labels: on the speaker inset, as a small badge on speaker shots, next to
+          side-by-side slides, and as a name banner on speaker shots. Leave empty for no labels.</p>
+        <div class="info">
+          <label>Event <input data-info="event" placeholder="Puppet Masters Meetup #42"></label>
+          <label>Date <input data-info="date" placeholder="1 October 2026"></label>
+          <label>Speaker <input data-info="speaker" placeholder="Name"></label>
+          <label>Role <input data-info="role" placeholder="e.g. Platform Engineer (optional)"></label>
+          <label>Talk <input data-info="talk" placeholder="Talk title"></label>
+          <label>Name banner every <input data-info="lower_third_every" type="number" min="0" step="1" style="width:5em"> min
+            <span class="hint">(0: only on the first speaker shot)</span></label>
+        </div>
+      </details>
+      <h2>Sound</h2>
+      <label class="check"><input type="checkbox" data-info="compression"> Even out loud and quiet speech</label>
+      <p class="hint">Good for a phone's own microphone. Turn it off when the sound is already cleaned up (e.g. the
+        iPhone's Studio audio mix): the background stays as quiet as recorded. The loudness is set either way.</p>
+      <h2>Export size</h2>
+      <label class="check">Video <select data-info="resolution"><option value="1080p">1080p (1920×1080)</option>
+        <option value="4k">4K (3840×2160)</option></select></label>
+      <p class="hint"><span id="cameraSize"></span>4K is sharper for a 4K camera and for a screen recording bigger than 1080p (code,
+        demos); the export takes 3–4× as long and
+        its converted videos ~4× the disk. Editing and Export preview stay 1080p.</p>
+      <h2>Changes</h2>
+      <div id="events"></div>
+      <div id="screenRow" class="hidden">
+        <h2>Screen recording offset</h2>
+        <p class="hint">Talk time at which the screen recording starts.</p>
+        <div class="row">
+          <button data-nudge="-1">−1 s</button><button data-nudge="-0.1">−0.1</button>
+          <input id="screenOffset" type="text" size="8">
+          <button data-nudge="0.1">+0.1</button><button data-nudge="1">+1 s</button>
+        </div>
+      </div>
+      <h2>Captions</h2>
+      <div>
+        <p id="captionsMsg" class="hint"></p>
+        <div id="macBox" class="hidden">
+          <div class="row"><input id="macFolder" title="A folder the Mac can open, e.g. in the shared folder"><button id="macWrite">Transcribe on a Mac</button></div>
+          <p id="macHelp" class="hint"></p>
+        </div>
+      </div>
+      <h2>Export preview</h2>
+      <p id="bumpers" class="hint hidden"></p>
+      <div>
+        <div id="exportHead" class="hint">A quick 720p export to check the edit. Make video (above) exports the final video.</div>
+        <progress id="exportProgress" max="100" class="hidden"></progress>
+        <div id="exportLink" class="hidden"><a target="_blank"></a></div>
+        <pre id="exportLog" class="log hidden"></pre>
+      </div>
+      <details>
+        <summary>Keys</summary>
+        <table>
+          <tr><td>Space</td><td>play / pause</td></tr>
+          <tr><td>← →</td><td>seek 5 s (Shift: 1 s)</td></tr>
+          <tr><td>, .</td><td>one frame back / forward</td></tr>
+          <tr><td>N / B</td><td>next / previous slide starts here</td></tr>
+          <tr><td>S</td><td>slide, speaker in the corner</td></tr>
+          <tr><td>Shift+S</td><td>slide and speaker side by side</td></tr>
+          <tr><td>F</td><td>slide (or screen) full screen</td></tr>
+          <tr><td>P</td><td>speaker full screen</td></tr>
+          <tr><td>V</td><td>speaker large, slide/screen small</td></tr>
+          <tr><td>C / Shift+C</td><td>screen recording, corner / side by side</td></tr>
+          <tr><td>X</td><td>leave out: this part is not in the video</td></tr>
+          <tr><td>K</td><td>split here: select the part after the playhead, then pick its style</td></tr>
+          <tr><td>[ ]</td><td>set start / end here</td></tr>
+          <tr><td>Del</td><td>unsplit: join the selected part with the one before it</td></tr>
+          <tr><td>Home</td><td>play as exported (intro, talk, outro)</td></tr>
+          <tr><td>Esc</td><td>deselect / stop intro or outro</td></tr>
+          <tr><td>Ctrl+Z</td><td>undo (Shift: redo)</td></tr>
+        </table>
+        <p class="hint">The bar above the timeline has a button for each key. Keys and buttons add a change at the playhead (0.3 s earlier while playing, for reaction time).
+          With a change selected (click it on the timeline or in the list), keys and slide clicks edit that change instead.</p>
+      </details>
+    </aside>
+  </main>
+
+  <nav id="toolbar" aria-label="Editing actions">
+    <div class="group">
+      <span id="toolTarget" class="groupLabel">From here, show:</span>
+      <button data-action="slide" title="Slide large, you in the corner (S)"><span class="mini"><i class="c" style="left:3%;top:3%;width:94%;height:94%"></i><i class="p" style="left:71%;top:70%;width:25%;height:25%"></i></span>Slide<kbd>S</kbd></button>
+      <button data-action="side" title="Slide and you side by side (Shift+S)"><span class="mini"><i class="c" style="left:1%;top:17%;width:67%;height:67%"></i><i class="p" style="left:69%;top:17%;width:30%;height:30%"></i></span>Side by side<kbd>⇧S</kbd></button>
+      <button data-action="full" title="Slide (or screen recording) full screen (F)"><span class="mini"><i class="c" style="left:0;top:0;width:100%;height:100%"></i></span>Full<kbd>F</kbd></button>
+      <button data-action="speakerLarge" title="You large, slide or screen small (V)"><span class="mini"><i class="p" style="left:0;top:0;width:100%;height:100%"></i><i class="c" style="left:67%;top:65%;width:31%;height:31%"></i></span>You large<kbd>V</kbd></button>
+      <button data-action="speaker" title="Only you, full screen (P)"><span class="mini"><i class="p" style="left:0;top:0;width:100%;height:100%"></i></span>Only you<kbd>P</kbd></button>
+      <button data-action="screen" class="needsScreen" title="Screen recording, you in the corner (C)"><span class="mini"><i class="s" style="left:3%;top:3%;width:94%;height:94%"></i><i class="p" style="left:71%;top:70%;width:25%;height:25%"></i></span>Screen<kbd>C</kbd></button>
+      <button data-action="screenSide" class="needsScreen" title="Screen recording and you side by side (Shift+C)"><span class="mini"><i class="s" style="left:1%;top:17%;width:67%;height:67%"></i><i class="p" style="left:69%;top:17%;width:30%;height:30%"></i></span>Screen side<kbd>⇧C</kbd></button>
+      <button data-action="cut" title="Leave this part out of the video (X)"><span class="mini"><i class="x" style="left:0;top:0;width:100%;height:100%"></i></span>Leave out<kbd>X</kbd></button>
+    </div>
+    <div class="group">
+      <span class="groupLabel">Slide</span>
+      <button data-action="prevSlide" title="The previous slide starts here (B)">◀ Previous<kbd>B</kbd></button>
+      <button data-action="nextSlide" title="The next slide starts here (N)">Next ▶<kbd>N</kbd></button>
+    </div>
+    <div class="group">
+      <span class="groupLabel">Move</span>
+      <button data-action="back5" title="Back 5 seconds (←; Shift+←: 1 s)">« 5 s<kbd>←</kbd></button>
+      <button data-action="frameBack" title="One frame back (,)">‹ Frame<kbd>,</kbd></button>
+      <button data-action="frameFwd" title="One frame forward (.)">Frame ›<kbd>.</kbd></button>
+      <button data-action="fwd5" title="Forward 5 seconds (→; Shift+→: 1 s)">5 s »<kbd>→</kbd></button>
+    </div>
+    <div class="group">
+      <span class="groupLabel">Trim</span>
+      <button data-action="trimStart" title="The video starts here ([)">Start here<kbd>[</kbd></button>
+      <button data-action="trimEnd" title="The video ends here (])">End here<kbd>]</kbd></button>
+    </div>
+    <div class="group">
+      <button data-action="split" title="Split here: the part after the playhead gets its own change, ready for a style (K)">Split here<kbd>K</kbd></button>
+      <button id="toolDelete" data-action="delete" title="Join the selected part with the one before it; nothing is removed from the video (Del)" disabled>Unsplit<kbd>Del</kbd></button>
+    </div>
+  </nav>
+
+  <section id="timelineWrap">
+    <div id="timeline">
+      <div id="ruler"></div>
+      <div id="track"></div>
+      <div id="trim"></div>
+      <div id="playhead"></div>
+    </div>
+  </section>
+
+  <section id="strip"></section>
+  </div>
+
+  <dialog id="youtubeDialog" class="form">
+    <form method="dialog">
+      <div class="helpHead"><h2>YouTube</h2><button type="submit" title="Close (Esc)">Close</button></div>
+      <div class="formBody">
+        <p id="ytStatus" class="hint"></p>
+        <div id="ytFields">
+          <h3>Title <button type="button" class="copy" data-copy="title">Copy</button></h3>
+          <input id="ytTitle" maxlength="100">
+          <div id="ytTitles" class="hint"></div>
+          <h3>Description <button type="button" class="copy" data-copy="description">Copy with chapters</button></h3>
+          <textarea id="ytDescription" rows="10"></textarea>
+          <h3>Chapters <span class="hint">(time and name per line; part of the description on YouTube)</span></h3>
+          <textarea id="ytChapters" rows="8"></textarea>
+          <h3>Tags <button type="button" class="copy" data-copy="tags">Copy</button></h3>
+          <input id="ytTags" title="Separated by commas">
+        </div>
+      </div>
+      <div class="formFoot">
+        <span id="ytSaved" class="hint"></span>
+        <div class="spacer"></div>
+        <button type="button" id="ytMarkdown" title="Title options, description, chapters and tags as one Markdown text, each field in its own block">Copy all as Markdown</button>
+        <button type="button" id="ytRegenerate">Write again</button>
+        <button type="button" id="ytSave" class="primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="helpDialog">
+    <form method="dialog" class="helpHead">
+      <h2>How Meetaras works</h2>
+      <button title="Close (Esc)">Close</button>
+    </form>
+    <div class="helpBody">
+      <p>Meetaras turns your talk recording into a YouTube-ready video. For every moment of the talk you
+        choose what viewers see: your slides, you, or both. Those choices are the <b>changes</b> on the
+        right, and they are saved as plain text in <code id="helpFile">timeline.txt</code> after every edit.
+        The editor only edits that file; <b>Export</b> renders the actual video from it.</p>
+
+      <h3>What viewers can see</h3>
+      <div class="layouts">
+        <figure><div class="mini"><i class="c" style="left:3%;top:3%;width:94%;height:94%"></i><i class="p" style="left:71%;top:70%;width:25%;height:25%"></i></div>
+          <figcaption><b>S</b> slide, you in the corner<br><span>the default</span></figcaption></figure>
+        <figure><div class="mini"><i class="c" style="left:1%;top:17%;width:67%;height:67%"></i><i class="p" style="left:69%;top:17%;width:30%;height:30%"></i></div>
+          <figcaption><b>Shift+S</b> side by side<br><span>when the corner hides something</span></figcaption></figure>
+        <figure><div class="mini"><i class="c" style="left:0;top:0;width:100%;height:100%"></i></div>
+          <figcaption><b>F</b> slide full screen<br><span>dense slides, code</span></figcaption></figure>
+        <figure><div class="mini"><i class="p" style="left:0;top:0;width:100%;height:100%"></i><i class="c" style="left:67%;top:65%;width:31%;height:31%"></i></div>
+          <figcaption><b>V</b> you large, slide small<br><span>title slides, talking</span></figcaption></figure>
+        <figure><div class="mini"><i class="p" style="left:0;top:0;width:100%;height:100%"></i></div>
+          <figcaption><b>P</b> you full screen<br><span>stories, questions</span></figcaption></figure>
+      </div>
+      <p class="hint">A screen recording (for demos) works like a slide: <b>C</b> corner, <b>Shift+C</b> side by side, <b>F</b> full.
+        Set where it starts with the offset field on the right.</p>
+
+      <h3>Flow</h3>
+      <ol class="flow">
+        <li><b>Start from the draft.</b> Make video already found most slide changes by looking at the
+          projector in your video. Lines marked <span class="checkTag">CHECK</span> are worth a look.</li>
+        <li><b>Trim.</b> Go to where the talk really starts and press <b>[</b>; at the end press <b>]</b>.</li>
+        <li><b>Watch and fix.</b> Play (Space), at 1.5–2× if you like. When a slide change is missing, press <b>N</b>
+          (next slide) or click the slide in the strip below. Marks made while playing land 0.3 s earlier, to
+          allow for reaction time.</li>
+        <li><b>Choose the style.</b> Where you matter more than the slide, press <b>P</b>; where the corner covers
+          content, <b>Shift+S</b>; for a dense slide, <b>F</b>. To give only part of a stretch another style, press
+          <b>K</b> (Split here) where that part starts, then the style.</li>
+        <li><b>Leave out what you don't want.</b> “Leave out” is a choice like the styles. Press <b>K</b> (Split here) where
+          the unwanted part starts and again where it ends, click the piece in between on the bar, and press <b>X</b>
+          (Leave out). It stays on the bar, hatched, and playback skips it. To bring it back, select it and choose a style.</li>
+        <li><b>Correct a change.</b> Click it (on the coloured bar or in the list): the next key or slide click edits
+          <i>that</i> change. Drag its left edge to move it, or type the time. <b>Del</b> (Unsplit) joins that part with the
+          one before it; nothing is removed from the video. <b>Ctrl+Z</b> undoes.</li>
+        <li><b>Export preview</b> to check the result quickly (720p), then <b>Make video</b> for the final video:
+          it only re-renders what changed.</li>
+      </ol>
+
+      <h3>Good to know</h3>
+      <ul>
+        <li>Everything saves automatically. Your original file is kept once as <code>timeline.txt.orig</code>.</li>
+        <li>You can also edit <code>timeline.txt</code> by hand; the editor notices and offers to reload.</li>
+        <li>With a separate microphone, this preview plays the camera sound; the export uses the microphone.</li>
+        <li>Your intro and outro are set in the header of <code>timeline.txt</code> (<code>intro file.mp4</code>,
+          <code>outro file.mp4</code>). Export adds them; their sound is levelled separately.
+          Preview them with the ▶ Intro / ▶ Outro buttons, or press <b>Home</b> to play everything as exported.</li>
+        <li>Every key also has a button in the bar above the timeline. Press <b>?</b> to open this again; all keys are listed under “Keys” on the right.</li>
+      </ul>
+    </div>
+  </dialog>
+
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>

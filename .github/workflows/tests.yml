@@ -1,0 +1,57 @@
+# The fast suite on every push and pull request. The full suite (renders, make runs, the browser
+# tests) by hand: Actions → tests → Run workflow.
+name: tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DEBIAN_FRONTEND: noninteractive
+
+jobs:
+  fast:
+    name: fast suite (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest] # macOS: add macos-latest (the ffmpeg step below has its Homebrew line)
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: ffmpeg
+        run: |
+          if [ "$RUNNER_OS" = macOS ]; then
+            # Homebrew's plain ffmpeg has no zscale (zimg); ffmpeg-full does, and is keg-only.
+            brew install ffmpeg-full
+            echo "$(brew --prefix ffmpeg-full)/bin" >> "$GITHUB_PATH"
+          else
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run pytest -m "not slow and not ui and not whisper"
+
+  full:
+    name: full suite (Debian, with Chromium)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    # Debian 13, the system meetaras is developed on: ffmpeg 7.1, and a Chromium package (Ubuntu's is a snap).
+    container: debian:trixie
+    steps:
+      - name: ffmpeg, git and Chromium
+        run: apt-get update && apt-get install -y --no-install-recommends ffmpeg git ca-certificates chromium fonts-liberation
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run pytest -n auto --dist loadfile -rs

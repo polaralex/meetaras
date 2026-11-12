@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meetaras</title>
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="home">
+  <header>
+    <h1><img class="logo" src="/static/logo.png" alt="Meetaras"></h1>
+    <span id="libPath" class="hint"></span>
+    <div class="spacer"></div>
+    <a href="/setup" class="button">Setup</a>
+    <button id="newBtn" class="primary">New talk</button>
+  </header>
+  <div id="error" class="banner error hidden"></div>
+  <div id="setupBanner" class="banner hidden"></div>
+
+  <main>
+    <table id="talks">
+      <thead><tr><th>Talk</th><th>Status</th><th>Updated</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p id="empty" class="hint hidden">No talks yet. Press <b>New talk</b> and pick the recording and the slides.</p>
+  </main>
+
+  <dialog id="newDialog" class="form">
+    <form id="newForm" method="dialog">
+      <div class="helpHead"><h2>New talk</h2></div>
+      <div class="formBody">
+        <h3>Recordings</h3>
+        <div class="field"><span>Camera video *</span><input name="video" required placeholder="IMG_1234.MOV"><button type="button" data-pick="video">Choose…</button></div>
+        <div class="field"><span>Slides (PDF) *</span><input name="slides" required placeholder="deck.pdf"><button type="button" data-pick="pdf">Choose…</button></div>
+        <div class="field"><span>Screen recording</span><input name="screen" placeholder="optional: the laptop screen, for demos"><button type="button" data-pick="video">Choose…</button></div>
+        <div class="field"><span>Microphone</span><input name="audio" placeholder="optional: a separate mic recording"><button type="button" data-pick="audio">Choose…</button></div>
+        <div class="field"><span>Intro video</span><input name="intro" placeholder="optional: played before the talk"><button type="button" data-pick="video">Choose…</button></div>
+        <div class="field"><span>Outro video</span><input name="outro" placeholder="optional: played after the talk"><button type="button" data-pick="video">Choose…</button></div>
+        <p class="hint">Videos stay where they are (they are large); the PDF is copied into the talk folder.</p>
+        <div class="field"><span>Export size</span><select name="resolution">
+          <option value="auto">Match the recordings (4K for a 4K camera or a screen recording bigger than 1080p)</option><option value="1080p">1080p</option>
+          <option value="4k">4K (3–4× the export time)</option></select><span></span></div>
+
+        <h3>Video info</h3>
+        <div class="field"><span>Talk title</span><input name="talk" placeholder="Engines and Ideas"><span></span></div>
+        <div class="field"><span>Speaker</span><input name="speaker" placeholder="Name"><span></span></div>
+        <div class="field"><span>Role</span><input name="role" placeholder="optional, e.g. Platform Engineer"><span></span></div>
+        <div class="field"><span>Event</span><input name="event" placeholder="Puppet Masters Meetup #42"><span></span></div>
+        <div class="field"><span>Date</span><input name="date" placeholder="1 October 2026"><span></span></div>
+        <div class="field"><span>Language</span><input name="language" list="languages" placeholder="detect automatically"><span></span></div>
+        <datalist id="languages"><option value="en">English</option><option value="el">Greek</option><option value="de">German</option>
+          <option value="fr">French</option><option value="es">Spanish</option><option value="it">Italian</option></datalist>
+
+        <h3>Folder</h3>
+        <div class="field"><span>Talk folder</span><input name="name" placeholder="from the title"><span></span></div>
+        <p id="folderHint" class="hint"></p>
+      </div>
+      <p id="newError" class="hidden"></p>
+      <div class="formFoot">
+        <label class="check" title="Otherwise it goes straight through to the final video; you can still fix things afterwards">
+          <input type="checkbox" name="review"> Stop after the draft, to review it before the export</label>
+        <div class="spacer"></div>
+        <button type="button" id="newCancel">Cancel</button>
+        <button id="newSubmit" class="primary" value="make">Make video</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="picker" class="form">
+    <div class="helpHead"><h2 id="pickerTitle">Choose a file</h2><button type="button" id="pickerClose">Close</button></div>
+    <div class="crumbs">
+      <button type="button" id="pickerUp" title="Up one folder">↑</button>
+      <input id="pickerPath" title="Type a folder and press Enter">
+    </div>
+    <div class="pick">
+      <div id="places"></div>
+      <div id="entries"></div>
+    </div>
+  </dialog>
+
+  <script type="module" src="/static/home.js"></script>
+</body>
+</html>

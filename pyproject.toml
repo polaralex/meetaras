@@ -1,0 +1,47 @@
+[project]
+name = "meetaras"
+version = "0.1.0"
+description = "Turn a recorded tech talk into a YouTube-ready video with slides and presenter PiP"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Alex Emexezidis" }]
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "pymupdf>=1.24",
+    "typer>=0.12",
+    "opencv-python-headless>=5.0.0.93",
+    "fastapi>=0.142.2",
+    "uvicorn>=0.54.0",
+]
+
+[project.optional-dependencies]
+api = ["anthropic"]  # YouTube metadata with an API key, when the Claude Code CLI isn't installed
+
+[project.scripts]
+meetaras = "meetaras.cli:app"
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.13.1",  # for starlette's TestClient (plain httpx is deprecated there)
+    "playwright>=1.63.0",
+    "pytest>=8",
+    "pytest-xdist>=3.8",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--strict-markers"]
+markers = [
+    "slow: real convert/draft/make/render runs (seconds each); the fast suite is -m \"not slow and not ui and not whisper\"",
+    "ui: drives Chromium through Playwright",
+    "whisper: needs this machine's whisper.cpp and model (skipped without them)",
+]
+
+[tool.ruff]
+line-length = 120

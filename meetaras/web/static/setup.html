@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meetaras · Setup</title>
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="home">
+  <header>
+    <h1><a href="/" title="All talks"><img class="logo" src="/static/logo.png" alt="Meetaras"></a> <span>Setup</span></h1>
+    <div class="spacer"></div>
+    <button id="recheck">Check again</button>
+  </header>
+  <div id="error" class="banner error hidden"></div>
+
+  <main>
+    <p class="hint">What Meetaras uses on this computer. Commands that need admin rights are shown for you to
+      copy into a terminal; Meetaras never runs them. Captions can be set up here with one click.</p>
+    <table id="checks">
+      <thead><tr><th></th><th>Tool</th><th>What for</th><th>Status</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div id="job" class="hidden">
+      <h2 id="jobHead"></h2>
+      <progress id="jobProgress" max="100" class="hidden"></progress>
+      <pre id="jobLog" class="log"></pre>
+    </div>
+  </main>
+
+  <script type="module" src="/static/setup.js"></script>
+</body>
+</html>

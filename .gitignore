@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+.work/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+CLAUDE.local.md
+.claude/worktrees/
+.claude/settings.local.json
+PLAN.md

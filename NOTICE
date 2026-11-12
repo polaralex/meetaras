@@ -1,0 +1,14 @@
+Meetaras
+Copyright 2026 Alex Emexezidis
+
+This product includes software developed by Alex Emexezidis.
+
+Bundled third-party files:
+- Noto Sans (meetaras/fonts/), Copyright 2022 The Noto Project Authors, SIL Open Font License 1.1
+  (meetaras/fonts/OFL.txt).
+
+Name, logos and mascot:
+The Meetaras name, the Meetaras logos and the mascot (docs/images/, meetaras/web/static/logo.png and
+meetaras/web/static/favicon.png) are the brand and artwork of Alex Emexezidis, Copyright 2026. They are
+not licensed under the Apache License (see its section 6 on trademarks). You may use them to refer to
+this project; using them as the name, logo or branding of a fork or another product needs permission.
